@@ -1,0 +1,4 @@
+#init.sh
+*.exe
+*.md
+cert/

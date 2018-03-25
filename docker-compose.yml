@@ -1,0 +1,159 @@
+
+
+# docker-compose.yml
+# https://docs.docker.com/compose/compose-file/#service-configuration-reference
+
+
+version: '2.1'
+
+networks:
+  local:
+    driver: macvlan
+    driver_opts: 
+      parent: qvs0
+    enable_ipv6: true
+    ipam:
+      # driver: default
+      config:
+      - subnet: 192.168.10.0/24
+      - subnet: 2601:646:c100:4dcb::/64
+
+services:
+  samba_adc:
+    # if `image` is not specified, build must be used to create a new image
+    build:
+      # Either a path to a directory containing a Dockerfile, or a url to a git repository.
+      context: .
+      # only specify this if not using the default dockerfile
+      # dockerfile: Dockerfile-alternate
+      # args:
+      #   - buildno=1
+      #   - gitcommithash
+    # tmpfs: 
+    #   - /var/cache/
+      # or to take from the environment:
+      #args:
+      #  - buildno
+      #  - gitcommithash
+    # image: samba-adc:${gitcommithash}
+    cap_add: 
+      - NET_ADMIN
+      # only set this if docker tries to override the DHCP
+      # dns: 192.168.10.1
+    # dns_search:
+      # - hiller.pro
+      # entrypoint: /override/entrypoint.sh
+    # env file can be singular or list.
+    # should be in NAME=VALUE
+    env_file: .env
+    # or 
+    # environment:
+      # - RACK_ENV=development
+      # - SHOW=true
+      # - SESSION_SECRET
+    # https://docs.docker.com/compose/compose-file/#long-syntax-3
+    # under build ?
+    # user: samba
+    # working_dir: /opt
+    # domainname: hiller.pro
+    hostname: adc
+    # ipc: host
+    # mac_address: 02:42:ac:11:65:43
+    mac_address: 02:42:ac:11:65:47
+    privileged: true
+    # read_only: true
+    # shm_size: 64M
+    # stdin_open: true
+    # tty: true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - samba-data:/usr/local/samba/var/lib/samba
+      - samba-config:/usr/local/samba/etc/samba/external
+      # - type: bind
+      #   source: /etc/localtime
+      #   target: /etc/localtime
+      #   read_only: true
+      # - type: volume
+      #   source: samba-data
+      #   target: /usr/local/samba/var/lib/samba
+      # - type: volume
+      #   source: samba-config
+      #   target: /usr/local/samba/etc/samba/external
+
+      # - type: bind
+      #   source: ./static
+      #   target: /opt/app/static
+      # # named (and listed in too level volumes)
+      # - type: volume
+      #   source: mydata
+      #   target: /data
+      #   volume:
+      #     nocopy: true
+    # restart: unless-stopped
+    # https://docs.docker.com/compose/compose-file/#restart
+    # restart: unless-stopped
+    restart: "no"
+    # expose ports of local machine, but not to host
+    # expose:
+    #   - "3000"
+    #   - "8000"
+    # https://docs.docker.com/compose/compose-file/#short-syntax-1
+    ports:
+      - 53:53
+      - 53:53/udp
+      - 88:88
+      - 88:88/udp
+      - 135:135
+      - 137-138:137-138/udp
+      - 139:139
+      - 389:389
+      - 389:389/udp
+      - 445:445
+      - 464:464
+      - 464:464/udp
+      - 636:636
+      - 1024-1044:1024-1044
+      - 3268-3269:3268-3269
+    # same as Docker's --add-host
+    # extra_hosts:
+    #   - "somehost:162.242.195.82"
+    #   - "otherhost:50.31.209.229"
+    # healthcheck
+    # https://docs.docker.com/engine/reference/builder/#healthcheck
+    # healthcheck:
+    #   # test: ["CMD", "smbclient", "-L", "'\\localhost\'", "-U", "'guest%'" , "-m", "SMB3"]
+    #   test: CMD smbclient -L '\\localhost\' -U 'guest%' -m SMB3
+    #   interval: 60s
+    #   timeout: 15s
+    #   retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+    #network_mode: macvlan ? unsure
+    # networks key under service/ is networks to join
+    networks:
+      local:
+        # aliases:
+          # - my1alias
+          # - my2al
+        # static IPs
+        # https://docs.docker.com/compose/compose-file/#ipv4_address-ipv6_address
+        ipv4_address: 192.168.10.3
+        ipv6_address: 2601:646:c100:4dcb::3
+      # adiffnet:
+    # https://docs.docker.com/compose/compose-file/#secrets
+    #secrets:
+    # sysctls:
+      # net.core.somaxconn: 1024
+      # net.ipv4.tcp_syncookies: 0
+
+  
+  # adiffnet:
+
+volumes:
+  samba-data:
+  samba-config:
+  
+    

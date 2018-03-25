@@ -1,4 +1,4 @@
 authorized_keys
 cert*
 secrets.ps1
-env.*
+*env*
