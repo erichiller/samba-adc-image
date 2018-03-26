@@ -28,8 +28,9 @@ appSetup () {
 	echo "    dns_lookup_realm = false" >> /etc/krb5.conf
 	echo "    dns_lookup_kdc = true" >> /etc/krb5.conf
 	echo "    default_realm = ${UDOMAIN}" >> /etc/krb5.conf
-	###   | A Kerberos configuration suitable for Samba AD has been generated at /usr/local/samba/private/krb5.conf
-	
+	# same as 
+	# ...A Kerberos configuration suitable for Samba AD has been generated at /usr/local/samba/private/krb5.conf
+	# 
 	# If the finished file isn't there, this is brand new, we're not just moving to a new container
 	if [[ ! -f ${SAMBACONFDIR}/external/smb.conf ]]; then
 		if [[ -f ${SAMBACONFDIR}/smb.conf ]]; then
@@ -50,22 +51,31 @@ appSetup () {
 				samba-tool domain passwordsettings set --max-pwd-age=0
 			fi
 		fi
+		# template homedir = /share/homes/DOMAIN=%D/%U
+		# domain master = auto
+		# min protocol = SMB3\\n\
+		# winbind enum groups = Yes
+		# winbind enum users = Yes
+		# host msdfs = yes
+		# name resolve order = host bcast
+		# lanman auth = no
+		# ntlm auth = no
+		
 		sed -i "/\[global\]/a \
 			\\\tidmap_ldb:use rfc2307 = yes\\n\
-			wins support = yes\\n\
+			wins support = no\\n\
 			template shell = /bin/bash\\n\
 			winbind nss info = rfc2307\\n\
-			idmap config ${URDOMAIN}: range = 10000-20000\\n\
-			idmap config ${URDOMAIN}: backend = ad\
 			\n\
-			client ntlmv2 auth = yes\n\
-			dos filetime resolution = no\n\
-			follow symlinks = yes\n\
-			wide links = yes\n\
-			log level = 4\n\
-			lanman auth = no\n\
-			ntlm auth = no\n\
-			min protocol = SMB3\n\
+			client ntlmv2 auth = yes\\n\
+			dos filetime resolution = no\\n\
+			follow symlinks = yes\\n\
+			wide links = yes\\n\
+			log level = 2\\n\
+			lanman auth = no\\n\
+			min protocol = NT1\\n\
+			ntlm auth = no\\n\
+			server string = ${HOSTNAME}\\n\
 
 			" ${SAMBACONFDIR}/smb.conf
 		if [[ $DNSFORWARDER != "NONE" ]]; then

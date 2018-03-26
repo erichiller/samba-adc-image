@@ -16,10 +16,11 @@ networks:
       # driver: default
       config:
       - subnet: 192.168.10.0/24
-      - subnet: 2601:646:c100:4dcb::/64
+      # - subnet: 2601:646:c100:4dcb::/64
 
 services:
   samba_adc:
+    # container_name: adc
     # if `image` is not specified, build must be used to create a new image
     build:
       # Either a path to a directory containing a Dockerfile, or a url to a git repository.
@@ -39,9 +40,13 @@ services:
     cap_add: 
       - NET_ADMIN
       # only set this if docker tries to override the DHCP
-      # dns: 192.168.10.1
-    # dns_search:
-      # - hiller.pro
+    dns:
+      - 192.168.10.1
+      - 192.168.10.3
+    dns_search:
+      - hiller.pro
+    hostname: adc
+    domainname: hiller.pro
       # entrypoint: /override/entrypoint.sh
     # env file can be singular or list.
     # should be in NAME=VALUE
@@ -55,10 +60,7 @@ services:
     # under build ?
     # user: samba
     # working_dir: /opt
-    # domainname: hiller.pro
-    hostname: adc
     # ipc: host
-    # mac_address: 02:42:ac:11:65:43
     mac_address: 02:42:ac:11:65:47
     privileged: true
     # read_only: true
@@ -67,36 +69,11 @@ services:
     # tty: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - samba-data:/usr/local/samba/var/lib/samba
-      - samba-config:/usr/local/samba/etc/samba/external
-      # - type: bind
-      #   source: /etc/localtime
-      #   target: /etc/localtime
-      #   read_only: true
-      # - type: volume
-      #   source: samba-data
-      #   target: /usr/local/samba/var/lib/samba
-      # - type: volume
-      #   source: samba-config
-      #   target: /usr/local/samba/etc/samba/external
-
-      # - type: bind
-      #   source: ./static
-      #   target: /opt/app/static
-      # # named (and listed in too level volumes)
-      # - type: volume
-      #   source: mydata
-      #   target: /data
-      #   volume:
-      #     nocopy: true
-    # restart: unless-stopped
+      - samba-data:/usr/local/samba
+      - samba-logs:/var/logs
     # https://docs.docker.com/compose/compose-file/#restart
     # restart: unless-stopped
     restart: "no"
-    # expose ports of local machine, but not to host
-    # expose:
-    #   - "3000"
-    #   - "8000"
     # https://docs.docker.com/compose/compose-file/#short-syntax-1
     ports:
       - 53:53
@@ -141,6 +118,7 @@ services:
         # static IPs
         # https://docs.docker.com/compose/compose-file/#ipv4_address-ipv6_address
         ipv4_address: 192.168.10.3
+        # ipv6 should use dhcp?
         ipv6_address: 2601:646:c100:4dcb::3
       # adiffnet:
     # https://docs.docker.com/compose/compose-file/#secrets
@@ -154,6 +132,6 @@ services:
 
 volumes:
   samba-data:
-  samba-config:
+  samba-logs:
   
     
