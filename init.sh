@@ -33,6 +33,7 @@ appSetup () {
 	# 
 	# If the finished file isn't there, this is brand new, we're not just moving to a new container
 	if [[ ! -f ${SAMBACONFDIR}/external/smb.conf ]]; then
+		echo "external/smb.conf not found, setting up new domain"
 		if [[ -f ${SAMBACONFDIR}/smb.conf ]]; then
 			mv ${SAMBACONFDIR}/smb.conf ${SAMBACONFDIR}/smb.conf.orig
 		fi
