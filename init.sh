@@ -19,6 +19,16 @@ appSetup () {
 	UDOMAIN=${DOMAIN^^}
 	URDOMAIN=${UDOMAIN%%.*}
 
+	HOSTNAME=${HOSTNAME:-ADC}
+	# DNS_BACKEND=SAMBA_INTERNAL
+	DNS_BACKEND=BIND9_DLZ
+
+	# rebuild samba no matter what?
+	FORCE_SAMBA_RECONFIGURE=${FORCE_SAMBA_RECONFIGURE}
+	echo -e "!!!\n\nFORCE_SAMBA_RECONFIGURE is ${FORCE_SAMBA_RECONFIGURE}\n\n!!!"
+	FORCE_SAMBA_RECONFIGURE=1
+	
+
 	SAMBACONFDIR=/usr/local/samba/etc
 	SAMBAEXE=/usr/local/samba/sbin/samba
 
@@ -32,19 +42,19 @@ appSetup () {
 	# ...A Kerberos configuration suitable for Samba AD has been generated at /usr/local/samba/private/krb5.conf
 	# 
 	# If the finished file isn't there, this is brand new, we're not just moving to a new container
-	if [[ ! -f ${SAMBACONFDIR}/external/smb.conf ]]; then
+	if [[ ! -f ${SAMBACONFDIR}/external/smb.conf ]] || [[ ! -z "${FORCE_SAMBA_RECONFIGURE}" ]]; then
 		echo "external/smb.conf not found, setting up new domain"
 		if [[ -f ${SAMBACONFDIR}/smb.conf ]]; then
 			mv ${SAMBACONFDIR}/smb.conf ${SAMBACONFDIR}/smb.conf.orig
 		fi
 		if [[ ${JOIN,,} == "true" ]]; then
 			if [[ ${JOINSITE} == "NONE" ]]; then
-				samba-tool domain join ${LDOMAIN} DC -U"${URDOMAIN}\administrator" --password="${DOMAINPASS}" --dns-backend=SAMBA_INTERNAL
+				samba-tool domain join ${LDOMAIN} DC -U"${URDOMAIN}\administrator" --password="${DOMAINPASS}" --dns-backend=${DNS_BACKEND}
 			else
-				samba-tool domain join ${LDOMAIN} DC -U"${URDOMAIN}\administrator" --password="${DOMAINPASS}" --dns-backend=SAMBA_INTERNAL --site=${JOINSITE}
+				samba-tool domain join ${LDOMAIN} DC -U"${URDOMAIN}\administrator" --password="${DOMAINPASS}" --dns-backend=${DNS_BACKEND} --site=${JOINSITE}
 			fi
 		else
-			samba-tool domain provision --use-rfc2307 --domain=${URDOMAIN} --realm=${UDOMAIN} --server-role=dc --dns-backend=SAMBA_INTERNAL --adminpass=${DOMAINPASS}
+			samba-tool domain provision --use-rfc2307 --domain=${URDOMAIN} --realm=${UDOMAIN} --server-role=dc --dns-backend=${DNS_BACKEND} --adminpass=${DOMAINPASS}
 			if [[ ${NOCOMPLEXITY,,} == "true" ]]; then
 				samba-tool domain passwordsettings set --complexity=off
 				samba-tool domain passwordsettings set --history-length=0
@@ -89,6 +99,12 @@ appSetup () {
 				\\\tldap server require strong auth = no\
 				" ${SAMBACONFDIR}/smb.conf
 		fi
+
+		# create kerberos config for sssd
+		samba-tool domain exportkeytab /etc/krb5.keytab --principal ${HOSTNAME}\$
+		# sed -i "s/SAMBA_REALM/${UDOMAIN}/" /etc/sssd/sssd.conf
+		kdb5_util create -s -P ${DOMAINPASS}
+
 		# Once we are set up, we'll make a file so that we know to use it if we ever spin this up again
 		mkdir -p ${SAMBACONFDIR}/external/
 		cp ${SAMBACONFDIR}/smb.conf ${SAMBACONFDIR}/external/smb.conf
@@ -96,14 +112,11 @@ appSetup () {
 		cp ${SAMBACONFDIR}/external/smb.conf ${SAMBACONFDIR}/smb.conf
 	fi
         
-	# Set up supervisor
-	echo "[supervisord]" > /etc/supervisor/conf.d/supervisord.conf
-	echo "nodaemon=true" >> /etc/supervisor/conf.d/supervisord.conf
-	echo "stdout_logfile=/dev/fd/1" >> /etc/supervisor/conf.d/supervisord.conf
-	echo "stdout_logfile_maxbytes=0" >> /etc/supervisor/conf.d/supervisord.conf
-	echo "" >> /etc/supervisor/conf.d/supervisord.conf
-	echo "[program:samba]" >> /etc/supervisor/conf.d/supervisord.conf
-	echo "command=${SAMBAEXE} -i -d ${DEBUG_LEVEL}" >> /etc/supervisor/conf.d/supervisord.conf
+	# Set up samba supervisor config
+	echo "[program:samba]" > /etc/supervisor/conf.d/samba.conf
+	echo "command=${SAMBAEXE} -i -d ${DEBUG_LEVEL}" >> /etc/supervisor/conf.d/samba.conf
+
+	cp /usr/local/samba/private/krb5.conf /etc/krb5.conf
 	
 	appStart
 }
@@ -123,7 +136,7 @@ case "$1" in
 		;;
 	setup)
 		# If the supervisor conf isn't there, we're spinning up a new container
-		if [[ -f /etc/supervisor/conf.d/supervisord.conf ]]; then
+		if [[ -f /etc/supervisor/conf.d/samba.conf ]]; then
 			appStart
 		else
 			appSetup

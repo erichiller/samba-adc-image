@@ -25,6 +25,8 @@ services:
     build:
       # Either a path to a directory containing a Dockerfile, or a url to a git repository.
       context: .
+      args:
+        FORCE_SAMBA_RECONFIGURE:
       # only specify this if not using the default dockerfile
       # dockerfile: Dockerfile-alternate
       # args:
@@ -39,6 +41,8 @@ services:
     # image: samba-adc:${gitcommithash}
     cap_add: 
       - NET_ADMIN
+      - FOWNER
+      - CHOWN
       # only set this if docker tries to override the DHCP
     dns:
       - 192.168.10.1
@@ -70,12 +74,13 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - samba-data:/usr/local/samba
-      - samba-logs:/var/logs
+      - samba-logs:/var/log
     # https://docs.docker.com/compose/compose-file/#restart
     # restart: unless-stopped
     restart: "no"
     # https://docs.docker.com/compose/compose-file/#short-syntax-1
     ports:
+      - 22:22
       - 53:53
       - 53:53/udp
       - 88:88
