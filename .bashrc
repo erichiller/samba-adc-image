@@ -32,7 +32,12 @@ man() {
 }
 
 # for terminal line coloring
-export PS1="\[$(tput sgr0)\]\[$(tput setaf 6)\]\h \[$(tput setaf 5)\]\w \[$(tput setaf 1)\]\\$ \[$(tput setaf 2)\]"
+if [ "$IS_WSL"]; then
+    # do not display the user if in Windows Subsystem for Linux, I find it useless
+    export PS1="\[$(tput sgr0)\]\[$(tput setaf 6)\]\h \[$(tput setaf 5)\]\w \[$(tput setaf 1)\]\\$ \[$(tput setaf 2)\]"
+else
+    export PS1="\[$(tput sgr0)\]\[$(tput setaf 4)\]\u@\[$(tput setaf 6)\]\h \[$(tput setaf 5)\]\w \[$(tput setaf 1)\]\\$ \[$(tput setaf 2)\]"
+fi
 none="$(tput sgr0)"
 trap 'echo -ne "${none}"' DEBUG
 

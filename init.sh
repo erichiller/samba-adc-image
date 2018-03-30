@@ -33,14 +33,6 @@ appSetup () {
 	SAMBAEXE=/usr/local/samba/sbin/samba
 
 	# Set up samba
-	mv /etc/krb5.conf /etc/krb5.conf.orig
-	echo "[libdefaults]" > /etc/krb5.conf
-	echo "    dns_lookup_realm = false" >> /etc/krb5.conf
-	echo "    dns_lookup_kdc = true" >> /etc/krb5.conf
-	echo "    default_realm = ${UDOMAIN}" >> /etc/krb5.conf
-	# same as 
-	# ...A Kerberos configuration suitable for Samba AD has been generated at /usr/local/samba/private/krb5.conf
-	# 
 	# If the finished file isn't there, this is brand new, we're not just moving to a new container
 	if [[ ! -f ${SAMBACONFDIR}/external/smb.conf ]] || [[ ! -z "${FORCE_SAMBA_RECONFIGURE}" ]]; then
 		echo "external/smb.conf not found, setting up new domain"
@@ -69,15 +61,13 @@ appSetup () {
 		# winbind enum users = Yes
 		# host msdfs = yes
 		# name resolve order = host bcast
-		# lanman auth = no
-		# ntlm auth = no
 		
 		sed -i "/\[global\]/a \
 			\\\tidmap_ldb:use rfc2307 = yes\\n\
 			wins support = no\\n\
 			template shell = /bin/bash\\n\
 			winbind nss info = rfc2307\\n\
-			\n\
+			\\n\
 			client ntlmv2 auth = yes\\n\
 			dos filetime resolution = no\\n\
 			follow symlinks = yes\\n\
@@ -101,9 +91,9 @@ appSetup () {
 		fi
 
 		# create kerberos config for sssd
-		samba-tool domain exportkeytab /etc/krb5.keytab --principal ${HOSTNAME}\$
+		# samba-tool domain exportkeytab /etc/krb5.keytab --principal ${HOSTNAME}\$
 		# sed -i "s/SAMBA_REALM/${UDOMAIN}/" /etc/sssd/sssd.conf
-		kdb5_util create -s -P ${DOMAINPASS}
+		# kdb5_util create -s -P ${DOMAINPASS}
 
 		# Once we are set up, we'll make a file so that we know to use it if we ever spin this up again
 		mkdir -p ${SAMBACONFDIR}/external/

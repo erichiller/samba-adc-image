@@ -4,7 +4,7 @@
 # https://docs.docker.com/compose/compose-file/#service-configuration-reference
 
 
-version: '2.1'
+version: '2.3'
 
 networks:
   local:
@@ -26,7 +26,7 @@ services:
       # Either a path to a directory containing a Dockerfile, or a url to a git repository.
       context: .
       args:
-        FORCE_SAMBA_RECONFIGURE:
+        FORCE_SAMBA_RECONFIGURE: 
       # only specify this if not using the default dockerfile
       # dockerfile: Dockerfile-alternate
       # args:
@@ -72,9 +72,16 @@ services:
     # stdin_open: true
     # tty: true
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - samba-data:/usr/local/samba
-      - samba-logs:/var/log
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+      - type: volume
+        source: samba-data
+        target: /usr/local/samba
+      - type: volume
+        source: samba-logs
+        target: /var/log
     # https://docs.docker.com/compose/compose-file/#restart
     # restart: unless-stopped
     restart: "no"
