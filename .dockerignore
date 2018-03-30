@@ -1,4 +1,6 @@
 #init.sh
 *.exe
-*.md
 cert/
+*.md
+!README.md
+.git/

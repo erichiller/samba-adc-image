@@ -3,8 +3,8 @@ SHELL ["/bin/bash", "-c"]
 
 # https://github.com/myrjola/docker-samba-ad-dc/blob/master/Dockerfile
 
-LABEL description="Samba 3.8 AD Controller"
-MAINTAINER Eric Hiller <ehiller@hiller.pro>
+LABEL description="Samba 4.8 AD Controller"
+LABEL maintainer="Eric Hiller <ehiller@hiller.pro>"
 ENV DEBIAN_FRONTEND noninteractive
 
 # my .bashrc
@@ -16,6 +16,18 @@ COPY authorized_keys /etc/ssh/authorized_keys
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 
+# Install sssd for UNIX logins to AD
+# --chown is only 17.09+
+# https://github.com/moby/moby/issues/35731
+RUN mkdir -p /etc/sssd
+RUN mkdir -p /var/lib/sss/db
+# RUN lsattr /etc/sssd
+# RUN lsattr /etc/sssd/sssd.conf
+# RUN chown -RLv sssd:root /etc/sssd
+COPY sssd.conf /etc/sssd/sssd.conf
+RUN chmod 0600 /etc/sssd/sssd.conf
+
+
 # for the system
 RUN echo -e "Eric D Hiller" > /etc/version
 RUN echo -e "Samba ADC" > /etc/version
@@ -25,7 +37,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --force-yes \
 		wget \
 		supervisor \
 		acl attr autoconf bind9utils bison build-essential \
-		debhelper dnsutils docbook-xml docbook-xsl flex gdb libjansson-dev krb5-user \
+		debhelper dnsutils docbook-xml docbook-xsl flex gdb libjansson-dev \
 		libacl1-dev libaio-dev libarchive-dev libattr1-dev libblkid-dev libbsd-dev \
 		libcap-dev libcups2-dev libgnutls28-dev libgpgme11-dev libjson-perl \
 		libldap2-dev libncurses5-dev libpam0g-dev libparse-yapp-perl \
@@ -33,20 +45,23 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --force-yes \
 		python-all-dev python-crypto python-dbg python-dev python-dnspython \
 		python3-dnspython python-gpgme python3-gpgme python-markdown python3-markdown \
 		python3-dev xsltproc zlib1g-dev \
-		bind9 libkrb5-dev krb5-kdc vim openssh-server expect rsyslog sssd sssd-tools \
+		bind9 vim openssh-server expect rsyslog \
 		inetutils-ping \
+	&& echo -e "deb http://ftp.debian.org/debian/ buster main\ndeb-src http://ftp.debian.org/debian/ buster main" >> /etc/apt/sources.list \
+	&& apt-get update && apt-get install -y --force-yes \
+		krb5-user libkrb5-dev krb5-kdc sssd sssd-tools \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
-
 
 
 WORKDIR /root
 RUN wget https://download.samba.org/pub/samba/stable/samba-4.8.0.tar.gz
 RUN tar -zxvf samba-4.8.0.tar.gz
 WORKDIR /root/samba-4.8.0
-RUN ./configure
+RUN ./configure --with-system-mitkrb5
 RUN make
 RUN make install
+RUN rm -rf /root/samba-4.8.0
 ENV PATH "/usr/local/samba/bin/:/usr/local/samba/sbin/:$PATH"
 
 # leave the working dir in somewhere useful
@@ -68,14 +83,6 @@ RUN wget -q -O /etc/bind/db.root http://www.internic.net/zones/named.root
 # RUN chown root:bind /etc/bind/db.root
 # RUN chmod 640 /etc/bind/db.root
 
-# Install sssd for UNIX logins to AD
-# --chown is only 17.09+
-# https://github.com/moby/moby/issues/35731
-# RUN lsattr /etc/sssd
-# RUN lsattr /etc/sssd/sssd.conf
-# RUN chown -RLv sssd:root /etc/sssd
-COPY sssd.conf /etc/sssd/conf.d/sssd.conf
-# RUN chmod 0600 /etc/sssd/sssd.conf
 
 # supervisor
 RUN mkdir -p /var/log/supervisor

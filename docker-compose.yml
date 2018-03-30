@@ -16,7 +16,7 @@ networks:
       # driver: default
       config:
       - subnet: 192.168.10.0/24
-      # - subnet: 2601:646:c100:4dcb::/64
+      # - subnet: ${NETWORK_V6}
 
 services:
   samba_adc:
@@ -124,7 +124,7 @@ services:
         # https://docs.docker.com/compose/compose-file/#ipv4_address-ipv6_address
         ipv4_address: 192.168.10.3
         # ipv6 should use dhcp?
-        ipv6_address: 2601:646:c100:4dcb::3
+        ipv6_address: ${ADDR_V6}
       # adiffnet:
     # https://docs.docker.com/compose/compose-file/#secrets
     #secrets:
