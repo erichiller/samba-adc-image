@@ -61,4 +61,3 @@ if has("autocmd")
 
       autocmd Syntax gitcommit setlocal textwidth=74
 endif " has("autocmd")
-

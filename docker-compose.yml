@@ -43,14 +43,15 @@ services:
       - NET_ADMIN
       - FOWNER
       - CHOWN
+    privileged: true
       # only set this if docker tries to override the DHCP
-    dns:
-      - 192.168.10.1
-      - 192.168.10.3
-    dns_search:
-      - hiller.pro
+    # dns:
+      # - 192.168.10.1
+      # - 192.168.10.3
+    # dns_search:
+    #   - hiller.pro
     hostname: adc
-    domainname: hiller.pro
+    # domainname: hiller.pro
       # entrypoint: /override/entrypoint.sh
     # env file can be singular or list.
     # should be in NAME=VALUE
@@ -66,7 +67,6 @@ services:
     # working_dir: /opt
     # ipc: host
     mac_address: 02:42:ac:11:65:47
-    privileged: true
     # read_only: true
     # shm_size: 64M
     # stdin_open: true
@@ -76,12 +76,15 @@ services:
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
-      - type: volume
-        source: samba-data
-        target: /usr/local/samba
-      - type: volume
-        source: samba-logs
-        target: /var/log
+      # - type: volume
+      #   source: samba-data
+      #   target: /usr/local/samba/var
+      # - type: volume
+      #   source: samba-conf
+      #   target: /usr/local/samba/etc
+      # - type: volume
+      #   source: samba-logs
+      #   target: /var/log
     # https://docs.docker.com/compose/compose-file/#restart
     # restart: unless-stopped
     restart: "no"
@@ -143,6 +146,7 @@ services:
   # adiffnet:
 
 volumes:
+  samba-conf:
   samba-data:
   samba-logs:
   

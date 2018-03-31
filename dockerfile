@@ -30,6 +30,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --force-yes `
 		supervisor `
 		acl attr autoconf bind9utils bison build-essential `
 		debhelper dnsutils docbook-xml docbook-xsl flex gdb libjansson-dev `
+		krb5-user `
 		libacl1-dev libaio-dev libarchive-dev libattr1-dev libblkid-dev libbsd-dev `
 		libcap-dev libcups2-dev libgnutls28-dev libgpgme11-dev libjson-perl `
 		libldap2-dev libncurses5-dev libpam0g-dev libparse-yapp-perl `
@@ -37,11 +38,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --force-yes `
 		python-all-dev python-crypto python-dbg python-dev python-dnspython `
 		python3-dnspython python-gpgme python3-gpgme python-markdown python3-markdown `
 		python3-dev xsltproc zlib1g-dev `
-		bind9 vim openssh-server expect rsyslog `
+		bind9 vim openssh-server expect `
 		inetutils-ping `
-	&& echo -e "deb http://ftp.debian.org/debian/ buster main\ndeb-src http://ftp.debian.org/debian/ buster main" >> /etc/apt/sources.list `
-	&& apt-get update && apt-get install -y --force-yes `
-		krb5-user libkrb5-dev krb5-kdc `
 	&& rm -rf /var/lib/apt/lists/* `
 	&& apt-get clean
 
@@ -50,10 +48,10 @@ WORKDIR /root
 RUN wget https://download.samba.org/pub/samba/stable/samba-4.8.0.tar.gz
 RUN tar -zxvf samba-4.8.0.tar.gz
 WORKDIR /root/samba-4.8.0
-RUN ./configure --with-system-mitkrb5
+RUN ./configure
 RUN make
 RUN make install
-RUN rm -rf /root/samba-4.8.0
+# RUN rm -rf /root/samba-4.8.0
 ENV PATH "/usr/local/samba/bin/:/usr/local/samba/sbin/:$PATH"
 
 # leave the working dir in somewhere useful
@@ -65,15 +63,9 @@ RUN sed -ri 's/^#PermitRootLogin .*$/PermitRootLogin Yes/g' /etc/ssh/sshd_config
 
 # Create run directory for bind9
 RUN mkdir -p /run/named
-# RUN chown -R bind:bind /run/named
-# RUN chown -R root:bind /etc/bind
 COPY named.conf.options /etc/bind/named.conf.options
-# RUN chmod 640 /etc/bind/named.conf.options
-# RUN chmod -R 640 /etc/bind
 # update ROOT nameservers
 RUN wget -q -O /etc/bind/db.root http://www.internic.net/zones/named.root
-# RUN chown root:bind /etc/bind/db.root
-# RUN chmod 640 /etc/bind/db.root
 
 
 # supervisor
