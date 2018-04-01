@@ -12,8 +12,10 @@ appSetup () {
 	JOINSITE=${JOINSITE:-NONE}
 	NOCOMPLEXITY=${NOCOMPLEXITY:-false}
 	INSECURELDAP=${INSECURELDAP:-false}
-	DNSFORWARDER=${DNSFORWARDER:-NONE}
 	DEBUG_LEVEL=${DEBUG_LEVEL:-2}
+	BINDCONFDIR=${BINDCONFDIR:-/etc/bind/}
+	ADDR_V4=${ADDR_V4}
+	ADDR_V6=${ADDR_V6}
 	
 	# lowercase FQDN
 	LDOMAIN=${DOMAIN,,}
@@ -26,16 +28,14 @@ appSetup () {
 	# DNS_BACKEND=SAMBA_INTERNAL
 	DNS_BACKEND=BIND9_DLZ
 
-	LOGDIR=${LOGDIR:-"/var/log/samba"}
-
 	# rebuild samba no matter what?
 	FORCE_SAMBA_RECONFIGURE=${FORCE_SAMBA_RECONFIGURE}
-	echo -e "!!!\n\nFORCE_SAMBA_RECONFIGURE is ${FORCE_SAMBA_RECONFIGURE}\n\n!!!"
-	FORCE_SAMBA_RECONFIGURE=1
-	
 
-	SAMBACONFDIR=/usr/local/samba/etc
-	SAMBAEXE=/usr/local/samba/sbin/samba
+	SAMBA_DATA_DIR=${SAMBA_DATA_DIR}
+
+
+	SAMBACONFDIR=${SAMBA_DATA_DIR}/config
+	SAMBAEXE=/sbin/samba
 
 	# Set up samba
 	# If the finished file isn't there, this is brand new, we're not just moving to a new container
@@ -70,7 +70,7 @@ appSetup () {
 			\\n\
 			client ntlmv2 auth = yes\\n\
 			dos filetime resolution = no\\n\
-			# unix extensions = yes\\n\
+			unix extensions = yes\\n\
 			follow symlinks = yes\\n\
 			wide links = yes\\n\
 			log file = /var/log/samba/%m.log\\n\
@@ -81,16 +81,22 @@ appSetup () {
 			server string = ${HOSTNAME}\\n\
 
 			" ${SAMBACONFDIR}/smb.conf
-		if [[ $DNSFORWARDER != "NONE" ]]; then
-			sed -i "/\[global\]/a \
-				\\\tdns forwarder = ${DNSFORWARDER}\
-				" ${SAMBACONFDIR}/smb.conf
-		fi
+		# DNSFORWARDER is useless with BIND
+		# if [[ $DNSFORWARDER != "NONE" ]]; then
+		# 	sed -i "/\[global\]/a \
+		# 		\\\tdns forwarder = ${DNSFORWARDER}\
+		# 		" ${SAMBACONFDIR}/smb.conf
+		# fi
 		if [[ ${INSECURELDAP,,} == "true" ]]; then
 			sed -i "/\[global\]/a \
 				\\\tldap server require strong auth = no\
 				" ${SAMBACONFDIR}/smb.conf
 		fi
+
+		# put in proper keytab location
+		sed -i "/\/\/ DNS dynamic updates via Kerberos/a \
+				\\\ttkey-gssapi-keytab \"\/${SAMBA_DATA_DIR}\/private\/dns\.keytab\";\
+				" ${BINDCONFDIR}/named.conf.options
 
 		# Once we are set up, we'll make a file so that we know to use it if we ever spin this up again
 		mkdir -p ${SAMBACONFDIR}/external/
@@ -106,14 +112,13 @@ appSetup () {
 	# create internal configs for the BIND backend
 	samba_upgradedns --dns-backend=BIND9_DLZ
 
-	cp /usr/local/samba/private/krb5.conf /etc/krb5.conf
+	cp ${SAMBA_DATA_DIR}/private/krb5.conf /etc/krb5.conf
 	
 	appStart
 }
 
 appStart () {
-	mkdir -p ${LOGDIR}
-	echo -e "search hiller.pro\nnameserver 127.0.0.1" > /etc/resolv.conf
+	echo -e "domain ${LDOMAIN}\nnameserver ${ADDR_V4}\n${ADDR_V6}" > /etc/resolv.conf
 	/usr/bin/supervisord
 }
 

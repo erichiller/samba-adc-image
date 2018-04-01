@@ -15,7 +15,7 @@ networks:
     ipam:
       # driver: default
       config:
-      - subnet: 192.168.10.0/24
+      - subnet: ${NETWORK_V4}
       # - subnet: ${NETWORK_V6}
 
 services:
@@ -25,8 +25,10 @@ services:
     build:
       # Either a path to a directory containing a Dockerfile, or a url to a git repository.
       context: .
+      # args must specify any environment variables which you want to show up in build (dockerfile) as well
       args:
-        FORCE_SAMBA_RECONFIGURE: 
+        FORCE_SAMBA_RECONFIGURE: 0
+        SAMBA_DATA_DIR: ${SAMBA_DATA_DIR}
       # only specify this if not using the default dockerfile
       # dockerfile: Dockerfile-alternate
       # args:
@@ -76,9 +78,9 @@ services:
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
-      # - type: volume
-      #   source: samba-data
-      #   target: /usr/local/samba/var
+      - type: volume
+        source: samba-data
+        target: ${SAMBA_DATA_DIR}
       # - type: volume
       #   source: samba-conf
       #   target: /usr/local/samba/etc
@@ -86,8 +88,8 @@ services:
       #   source: samba-logs
       #   target: /var/log
     # https://docs.docker.com/compose/compose-file/#restart
-    # restart: unless-stopped
-    restart: "no"
+    # restart: yes no on-failure
+    restart: "always"
     # https://docs.docker.com/compose/compose-file/#short-syntax-1
     ports:
       - 22:22
@@ -132,9 +134,9 @@ services:
           # - my2al
         # static IPs
         # https://docs.docker.com/compose/compose-file/#ipv4_address-ipv6_address
-        ipv4_address: 192.168.10.3
+        ipv4_address: ${ADDR_V4}
         # ipv6 should use dhcp?
-        ipv6_address: ${ADDR_V6}
+        # ipv6_address: ${ADDR_V6}
       # adiffnet:
     # https://docs.docker.com/compose/compose-file/#secrets
     #secrets:
@@ -146,8 +148,8 @@ services:
   # adiffnet:
 
 volumes:
-  samba-conf:
+  # samba-conf:
   samba-data:
-  samba-logs:
+  # samba-logs:
   
     

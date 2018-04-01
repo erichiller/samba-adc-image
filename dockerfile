@@ -3,20 +3,12 @@
 FROM debian:9
 SHELL ["/bin/bash", "-c"]
 
-
 # https://github.com/myrjola/docker-samba-ad-dc/blob/master/Dockerfile
 
 LABEL description="Samba 4.8 AD Controller"
 LABEL maintainer="Eric Hiller <ehiller@hiller.pro>"
 ENV DEBIAN_FRONTEND noninteractive
 
-# my .bashrc
-COPY .bashrc /root/.bashrc
-COPY .vimrc /root/.vimrc
-# remove ^M from .vimrc -- they always seem to get in there!
-RUN sed -ie "s/\^M//" /root/.vimrc
-RUN mkdir -p /root/.ssh
-COPY authorized_keys /root/.ssh/authorized_keys
 # use bash
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -43,19 +35,28 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --force-yes `
 	&& rm -rf /var/lib/apt/lists/* `
 	&& apt-get clean
 
-
+# Compile Samba newest
 WORKDIR /root
 RUN wget https://download.samba.org/pub/samba/stable/samba-4.8.0.tar.gz
 RUN tar -zxvf samba-4.8.0.tar.gz
 WORKDIR /root/samba-4.8.0
-RUN ./configure
+ARG SAMBA_DATA_DIR
+RUN mkdir -p $SAMBA_DATA_DIR
+RUN ./configure --with-configdir=$SAMBA_DATA_DIR/config --with-logfilebase=$SAMBA_DATA_DIR/log --with-bind-dns-dir=$SAMBA_DATA_DIR/dns --with-privatedir=$SAMBA_DATA_DIR/private --with-statedir=$SAMBA_DATA_DIR/state --disable-cups --mandir=/usr/share/man/ --sbindir=/sbin/ --bindir=/bin/
 RUN make
 RUN make install
-# RUN rm -rf /root/samba-4.8.0
-ENV PATH "/usr/local/samba/bin/:/usr/local/samba/sbin/:$PATH"
+# ENV PATH "/usr/local/samba/bin/:/usr/local/samba/sbin/:$PATH"
 
 # leave the working dir in somewhere useful
-WORKDIR /usr/local/samba/
+WORKDIR /root
+
+# my .bashrc
+COPY .bashrc /root/.bashrc
+COPY .vimrc /root/.vimrc
+# remove ^M from .vimrc -- they always seem to get in there!
+RUN sed -ie "s/\^M//" /root/.vimrc
+RUN mkdir -p /root/.ssh
+COPY authorized_keys /root/.ssh/authorized_keys
 
 # sshd
 RUN mkdir -p /var/run/sshd
@@ -63,18 +64,23 @@ RUN sed -ri 's/^#PermitRootLogin .*$/PermitRootLogin Yes/g' /etc/ssh/sshd_config
 
 # Create run directory for bind9
 RUN mkdir -p /run/named
+RUN chown root:bind /run/named
+RUN chmod g=rwx /run/named
+RUN chown root:bind /usr/local/samba/lib/bind9/dlz_bind9_10.so
 COPY named.conf.options /etc/bind/named.conf.options
 # update ROOT nameservers
 RUN wget -q -O /etc/bind/db.root http://www.internic.net/zones/named.root
+RUN chown --from=root:root root:bind /etc/bind/*
 
 
 # supervisor
 RUN mkdir -p /var/log/supervisor
 RUN mkdir -p /etc/supervisor/conf.d
-COPY aux_supervisord.conf /etc/supervisor/conf.d/aux_supervisord.conf
-RUN chmod 640 /etc/supervisor/conf.d/aux_supervisord.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN chmod 640 /etc/supervisor/conf.d/supervisord.conf
 
-
+ARG FORCE_SAMBA_RECONFIGURE
+ENV FORCE_SAMBA_RECONFIGURE $FORCE_SAMBA_RECONFIGURE
 COPY init.sh /root/init.sh
 RUN chmod 755 /root/init.sh
 CMD /root/init.sh setup

@@ -54,3 +54,10 @@ $vimrc  = "https://gist.githubusercontent.com/erichiller/ac3be5b4a562a61b255b0ba
     --mac-addr "00:0c:02:7c:9a:44" `
     --network "bridgemac" `
 	--name=samba-adc erichiller/samba-adc-image
+
+
+function Remove-DockerEverything {
+    docker rm -f $(docker ps -a -q)
+    docker rmi -f $(docker images -q)
+
+}

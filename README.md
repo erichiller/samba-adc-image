@@ -58,11 +58,13 @@ Much of the docker is from <https://github.com/Fmstrat/samba-domain>
 
 # Debug
 
+**NOTE**: Do remember the `-l -i` after `/bin/bash` otherwise the terminal will be sized oddly.
+
 ```
-docker --host "tcp://nas:2376" --tlsverify --tlscacert ./cert/ca.pem  --tlscert ./cert/cert.pem --tlskey ./cert/key.pem exec -it sambaadcimage_samba_adc_1 /bin/bash
+docker --host "tcp://nas:2376" --tlsverify --tlscacert ./cert/ca.pem  --tlscert ./cert/cert.pem --tlskey ./cert/key.pem exec -it sambaadcimage_samba_adc_1 /bin/bash -l -i
 
 
-docker --host "tcp://nas:2376" --tlsverify --tlscacert ./cert/ca.pem  --tlscert ./cert/cert.pem --tlskey ./cert/key.pem exec -it 66ae2381cdca /bin/bash
+docker --host "tcp://nas:2376" --tlsverify --tlscacert ./cert/ca.pem  --tlscert ./cert/cert.pem --tlskey ./cert/key.pem exec -it 66ae2381cdca /bin/bash -l -i
 
 
 
