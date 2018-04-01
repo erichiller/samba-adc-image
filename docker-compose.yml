@@ -11,7 +11,7 @@ networks:
     driver: macvlan
     driver_opts: 
       parent: qvs0
-    enable_ipv6: true
+    enable_ipv6: false
     ipam:
       # driver: default
       config:
