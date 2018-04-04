@@ -54,7 +54,7 @@ make
 make install
 ```
 
-Much of the docker is from <https://github.com/Fmstrat/samba-domain>
+Much of the docker is from <https://github.com/Fmstrat/samba-domain> and <https://github.com/myrjola/docker-samba-ad-dc/blob/master/Dockerfile>
 
 # Debug
 
@@ -71,6 +71,18 @@ docker --host "tcp://nas:2376" --tlsverify --tlscacert ./cert/ca.pem  --tlscert 
 
 ```
 
+
+# QNAP NAS
+
+make sure it has binded interfaces
+
+```
+bind interfaces only = yes
+interfaces = lo eth0
+```
+
+binary locations
+/mnt/ext/opt/samba/bin/
 
 # dump of info
 

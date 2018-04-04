@@ -20,6 +20,7 @@ options {
 	listen-on-v6 { any; };
 
     // DNS dynamic updates via Kerberos
+	tkey-gssapi-keytab "/data/private/dns.keytab";
 };
 dlz "AD DNS Zone" {
     database "dlopen /usr/local/samba/lib/bind9/dlz_bind9_10.so";

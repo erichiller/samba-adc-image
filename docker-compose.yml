@@ -1,8 +1,5 @@
-
-
 # docker-compose.yml
 # https://docs.docker.com/compose/compose-file/#service-configuration-reference
-
 
 version: '2.3'
 
@@ -11,9 +8,9 @@ networks:
     driver: macvlan
     driver_opts: 
       parent: qvs0
+      # gateway: ${NETWORK_GATEWAY}
     enable_ipv6: false
     ipam:
-      # driver: default
       config:
       - subnet: ${NETWORK_V4}
       # - subnet: ${NETWORK_V6}
@@ -81,14 +78,11 @@ services:
       - type: volume
         source: samba-data
         target: ${SAMBA_DATA_DIR}
-      # - type: volume
-      #   source: samba-conf
-      #   target: /usr/local/samba/etc
-      # - type: volume
-      #   source: samba-logs
-      #   target: /var/log
+      - type: volume
+        source: samba-logs
+        target: /var/log
     # https://docs.docker.com/compose/compose-file/#restart
-    # restart: yes no on-failure
+    # restart: always || no ||  on-failure
     restart: "always"
     # https://docs.docker.com/compose/compose-file/#short-syntax-1
     ports:
@@ -97,6 +91,8 @@ services:
       - 53:53/udp
       - 88:88
       - 88:88/udp
+      - 123:123
+      - 123:123/udp
       - 135:135
       - 137-138:137-138/udp
       - 139:139
@@ -108,6 +104,7 @@ services:
       - 636:636
       - 1024-1044:1024-1044
       - 3268-3269:3268-3269
+      - 49152-65535:49152-65535
     # same as Docker's --add-host
     # extra_hosts:
     #   - "somehost:162.242.195.82"
@@ -135,7 +132,6 @@ services:
         # static IPs
         # https://docs.docker.com/compose/compose-file/#ipv4_address-ipv6_address
         ipv4_address: ${ADDR_V4}
-        # ipv6 should use dhcp?
         # ipv6_address: ${ADDR_V6}
       # adiffnet:
     # https://docs.docker.com/compose/compose-file/#secrets
@@ -148,8 +144,7 @@ services:
   # adiffnet:
 
 volumes:
-  # samba-conf:
   samba-data:
-  # samba-logs:
+  samba-logs:
   
     
